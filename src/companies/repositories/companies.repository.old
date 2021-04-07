@@ -1,0 +1,7 @@
+// same as entity
+
+// import { EntityRepository, Repository } from 'typeorm';
+// import { Companies } from '../entities/companies.entity';
+
+// @EntityRepository(Companies)
+// export class CompaniesRepository extends Repository<Companies> {}

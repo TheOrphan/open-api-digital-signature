@@ -1,0 +1,7 @@
+// same as entity
+
+// import { CompaniesCreateDto } from './companies.create.dto';
+
+// export class CompaniesUpdateDto extends CompaniesCreateDto {
+//   id: number;
+// }

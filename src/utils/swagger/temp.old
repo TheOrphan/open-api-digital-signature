@@ -1,0 +1,20 @@
+#paste this to main.ts if you want have one page API Doc
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+const options = new DocumentBuilder()
+  .setTitle('eMaterai - API')
+  .setDescription('API list of eMaterai')
+  .setVersion('1.0')
+  .addTag('Auth')
+  .addTag('Repositories')
+  .addTag('Quotas')
+  .addTag('Contacts')
+  .addTag('Companies')
+  .addTag('Users')
+  .addTag('Groups')
+  .addTag('Users groups')
+  .addTag('Settings')
+  .addTag('Login attempts')
+  .addTag('Logs')
+  .build();
+const document = SwaggerModule.createDocument(app, options);
+SwaggerModule.setup('api', app, document);

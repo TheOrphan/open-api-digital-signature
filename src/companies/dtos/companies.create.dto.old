@@ -1,0 +1,5 @@
+// same as entity
+
+// export class CompaniesCreateDto {
+//   contact_id: number;
+// }
