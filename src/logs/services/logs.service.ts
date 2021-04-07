@@ -13,7 +13,7 @@ import { DeleteResult, UpdateResult } from 'typeorm';
 import { LogsCreateDto } from '../dtos/logs.create.dto';
 import { LogsDto } from '../dtos/logs.dto';
 import { LogsUpdateDto } from '../dtos/logs.update.dto';
-import { Logs } from '../entities/logs.entity';
+import { Logs } from '../schemas/logs.entity';
 import { LogsRepository } from '../repositories/logs.repository';
 
 @Injectable()

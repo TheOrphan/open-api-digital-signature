@@ -9,7 +9,7 @@ import { DeleteResult, UpdateResult } from 'typeorm';
 import { UsersGroupsCreateDto } from '../dtos/users-groups.create.dto';
 import { UsersGroupsDto } from '../dtos/users-groups.dto';
 import { UsersGroupsUpdateDto } from '../dtos/users-groups.update.dto';
-import { UsersGroups } from '../entities/users-groups.entity';
+import { UsersGroups } from '../schemas/users-groups.schema';
 import { UsersGroupsService } from '../services/users-groups.service';
 
 @ApiTags('Users groups')
