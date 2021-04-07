@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import * as config from 'config';
 
@@ -8,6 +7,9 @@ import { UsersGroupsService } from './services/users-groups.service';
 import { UsersGroupsController } from './controllers/users-groups.controller';
 import { UsersGroupsRepository } from './repositories/users-groups.repository';
 import { LogsModule } from 'src/logs/logs.module';
+import { UsersGroups, UsersGroupsSchema } from './schemas/users-groups.schema';
+import { MongooseModule } from '@nestjs/mongoose';
+
 const jwt = config.get('jwt');
 
 @Module({
@@ -20,9 +22,11 @@ const jwt = config.get('jwt');
         expiresIn: jwt.expires,
       },
     }),
-    TypeOrmModule.forFeature([UsersGroupsRepository]),
+    MongooseModule.forFeature([
+      { name: UsersGroups.name, schema: UsersGroupsSchema },
+    ]),
   ],
-  providers: [UsersGroupsService],
+  providers: [UsersGroupsRepository, UsersGroupsService],
   controllers: [UsersGroupsController],
   exports: [UsersGroupsService],
 })

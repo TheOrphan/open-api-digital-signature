@@ -1,31 +1,28 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
 import { Users } from 'src/users/schemas/users.schema';
 
-export type logDocument = Log & Document;
+export type LogsDocument = Logs & mongoose.Document;
 
 @Schema()
-export class Log {
+export class Logs {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Users' })
   user_id: Users;
 
-  @Prop({ type: 'varchar' })
+  @Prop({ type: String })
   activity: string;
 
-  @Prop({ type: 'string' })
+  @Prop({ type: String })
   content: string;
 
-  @Prop({ type: 'string' })
+  @Prop({ type: String })
   module: string;
 
   @Prop({
-    type: 'timestamp',
-    nullable: true,
-    precision: 3,
-    default: () => 'CURRENT_TIMESTAMP(3)',
+    type: Date,
+    default: Date.now,
   })
   created_at: Date;
 }
 
-export const LogSchema = SchemaFactory.createForClass(Log);
+export const LogsSchema = SchemaFactory.createForClass(Logs);

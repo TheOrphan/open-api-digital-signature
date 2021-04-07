@@ -45,14 +45,14 @@ export class Users {
   @Prop({
     type: Date,
     required: true,
-    default: () => Date.now,
+    default: Date.now,
   })
   last_login: Date;
 
   @Prop({
     type: Date,
     required: true,
-    default: () => Date.now,
+    default: Date.now,
   })
   created_at: Date;
 }

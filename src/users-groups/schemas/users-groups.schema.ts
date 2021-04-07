@@ -1,13 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Document } from 'mongoose';
 import { Users } from 'src/users/schemas/users.schema';
-import { Groups } from 'src/groups/schemas/groups.schema'
+import { Groups } from 'src/groups/schemas/groups.schema';
 
-export type usersGroupsDocument = usersGroups & Document;
+export type UsersGroupsDocument = UsersGroups & mongoose.Document;
 
 @Schema()
-export class usersGroups {
+export class UsersGroups {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Users' })
   user_id: Users;
 
@@ -15,4 +14,4 @@ export class usersGroups {
   group_id: Groups;
 }
 
-export const usersGroupsSchema = SchemaFactory.createForClass(usersGroups);
+export const UsersGroupsSchema = SchemaFactory.createForClass(UsersGroups);
