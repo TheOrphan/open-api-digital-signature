@@ -3,14 +3,13 @@ import { Prop, Schema } from '@nestjs/mongoose';
 @Schema()
 export class BaseCustomSchema {
   @Prop({
-    type: Date,
+    type: String,
     required: true,
   })
-  created_at: Date;
+  created_at: string;
 
   @Prop({
-    type: Date,
-    required: true,
+    type: String,
   })
-  updated_at: Date;
+  updated_at: string;
 }
