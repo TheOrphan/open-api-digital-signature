@@ -16,7 +16,7 @@ import { LogsService } from 'src/logs/services/logs.service';
 import { Users, UsersDocument } from '../schemas/users.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-
+import * as dayjs from 'dayjs';
 @Injectable()
 export class UsersService {
   constructor(
@@ -29,13 +29,11 @@ export class UsersService {
   ): Promise<BaseResponse<Users[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const users = await this.usersRepository.find({
-        relations: ['contact_id'],
-        take: size,
-        skip: (page - 1) * size,
-        cache: true,
-        // order: orderBy
-      });
+      const users = await this.usersRepository
+        .find()
+        .populate({ path: 'contact_id' })
+        .limit(size)
+        .skip((page - 1) * size);
       const total = users.length;
       const pagination = new PaginationBuilder()
         .page(page)
@@ -59,7 +57,7 @@ export class UsersService {
 
   async getById(usersDto: UsersDto): Promise<BaseResponse<Users>> {
     const users = await this.usersRepository.findOne({
-      where: { id: usersDto.id },
+      where: { _id: usersDto.id },
     });
     if (!users) {
       throw new NotFoundException('Divison not found');
@@ -85,6 +83,7 @@ export class UsersService {
       const users = new Users();
       Object.assign(users, createUsersDto);
       users.password = hashed;
+      users.created_at = dayjs().format();
       const createdData = new this.usersRepository(users);
       const result = await createdData.save();
       this.logsService.create({
@@ -133,8 +132,9 @@ export class UsersService {
         const hashed = await this.hashPassword(password);
         users.password = hashed;
       }
-      const createdData = new this.usersRepository(users);
-      const result = await createdData.save();
+      users.updated_at = dayjs().format();
+      const updatedData = new this.usersRepository(users);
+      const result = await updatedData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: quota_limit
@@ -225,14 +225,13 @@ export class UsersService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Users[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const users = await this.usersRepository.find({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
+      const users = await this.usersRepository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
           created_at: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
-      });
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
