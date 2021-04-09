@@ -57,10 +57,10 @@ export class UsersService {
 
   async getById(usersDto: UsersDto): Promise<BaseResponse<Users>> {
     const users = await this.usersRepository.findOne({
-      where: { _id: usersDto.id },
+      _id: usersDto.id,
     });
     if (!users) {
-      throw new NotFoundException('Divison not found');
+      throw new NotFoundException('User not found');
     }
     return new BaseResponse<Users>(HttpStatus.OK, 'OK', 'Users found', users);
   }
