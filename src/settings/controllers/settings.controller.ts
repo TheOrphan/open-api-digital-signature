@@ -9,7 +9,7 @@ import { DeleteResult, UpdateResult } from 'typeorm';
 import { SettingsCreateDto } from '../dtos/settings.create.dto';
 import { SettingsDto } from '../dtos/settings.dto';
 import { SettingsUpdateDto } from '../dtos/settings.update.dto';
-import { Settings } from '../entities/settings.entity';
+import { Settings } from '../schemas/settings.schema';
 import { SettingsService } from '../services/settings.service';
 
 @ApiTags('Settings')

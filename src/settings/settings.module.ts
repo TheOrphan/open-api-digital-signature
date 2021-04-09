@@ -5,10 +5,10 @@ import * as config from 'config';
 
 import { SettingsController } from './controllers/settings.controller';
 import { SettingsService } from './services/settings.service';
-import { SettingsRepository } from './repositories/settings.repository';
 import { LogsModule } from 'src/logs/logs.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Settings, SettingsSchema } from './schemas/settings.schema';
+
 const jwt = config.get('jwt');
 
 @Module({
@@ -26,6 +26,6 @@ const jwt = config.get('jwt');
     ]),
   ],
   controllers: [SettingsController],
-  providers: [SettingsService, SettingsRepository],
+  providers: [SettingsService],
 })
 export class SettingsModule {}
