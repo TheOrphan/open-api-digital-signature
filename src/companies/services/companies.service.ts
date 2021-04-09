@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Contacts } from 'src/contacts/entities/contacts.entity';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
@@ -16,12 +15,14 @@ import { ContactsDto } from 'src/contacts/dtos/contacts.dto';
 import { ContactsUpdateDto } from 'src/contacts/dtos/contacts.update.dto';
 import { ContactsRepository } from 'src/contacts/repositories/contacts.repository';
 import { LogsService } from 'src/logs/services/logs.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Contacts, ContactsDocument } from 'src/contacts/schemas/contacts.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class CompaniesService {
   constructor(
-    @InjectRepository(ContactsRepository)
-    private contactsRepository: ContactsRepository,
+    @InjectModel(Contacts.name) private contactRespository: Model<ContactsDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -30,24 +31,25 @@ export class CompaniesService {
   ): Promise<BaseResponse<Contacts[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [companies, total] = await this.contactsRepository.findAndCount({
-        where: { type: 'company' },
-        take: size,
-        skip: (page - 1) * size,
-        // order: orderBy
-      });
+      // const contacts = await this.contactRespository.find({
+      //   where: { type: 'company' },
+      //   take: size,
+      //   skip: (page - 1) * size,
+      //   // order: orderBy
+      // });
+      const contacts = await this.contactRespository.find({type: 'company'}).limit(size).skip(page - 1 * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(contacts.length)
         .build();
 
       return new BaseResponse<Contacts[]>(
         HttpStatus.OK,
         'OK',
         null,
-        companies,
+        contacts,
         pagination,
       );
     } catch (error) {
@@ -58,8 +60,12 @@ export class CompaniesService {
   }
 
   async getById(companiesDto: ContactsDto): Promise<BaseResponse<Contacts>> {
-    const company = await this.contactsRepository.findOne({
-      where: { id: companiesDto.id, type: 'company' },
+    // const company = await this.contactRespository.findOne({
+    //   where: { id: companiesDto.id, type: 'company' },
+    // });
+    const company = await this.contactRespository.findOne({
+      _id: companiesDto.id,
+      type: 'company'
     });
     if (!company) {
       throw new NotFoundException('Company not found');
@@ -73,20 +79,26 @@ export class CompaniesService {
   }
 
   async create(createContactsDto: ContactsCreateDto, req): Promise<any> {
-    const found = await this.contactsRepository.findOne({
-      where: {
-        first_name: createContactsDto.first_name,
-        last_name: createContactsDto.last_name,
-        type: 'company',
-      },
+    // const found = await this.contactsRepository.findOne({
+    //   where: {
+    //     first_name: createContactsDto.first_name,
+    //     last_name: createContactsDto.last_name,
+    //     type: 'company',
+    //   },
+    // });
+    const found = await this.contactRespository.findOne({
+      first_name: createContactsDto.first_name,
+      last_name: createContactsDto.last_name,
+      type: 'company'
     });
     if (found) {
       throw new BadRequestException('Record already exist');
     }
     try {
-      const companies = new Contacts();
-      Object.assign(companies, createContactsDto);
-      const result = await companies.save();
+      const contacts = new Contacts();
+      Object.assign(contacts, createContactsDto);
+      const createData = new this.contactRespository(contacts);
+      const result = await createData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'create success',
@@ -115,11 +127,11 @@ export class CompaniesService {
   async update(
     updateContactsDto: ContactsUpdateDto,
     req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Contacts>> {
     const { id } = updateContactsDto;
-    const found = await this.contactsRepository.findOne({ id });
+    const found = await this.contactRespository.findOne({ _id:id });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Contacts>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `Company with ID: ${id} not found`,
@@ -128,19 +140,21 @@ export class CompaniesService {
     }
 
     try {
-      const companies = new Contacts();
+      const companies = found;
       Object.assign(companies, updateContactsDto);
-      const result = await this.contactsRepository.update(
-        updateContactsDto.id,
-        companies,
-      );
+      // const result = await this.contactsRepository.update(
+      //   updateContactsDto.id,
+      //   companies,
+      // );
+      const createData = new this.contactRespository(companies);
+      const result = await createData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'update success',
         content: JSON.stringify(updateContactsDto),
         module: 'companies',
       });
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Contacts>(
         HttpStatus.CREATED,
         'UPDATED',
         'Company successfully updated',
@@ -162,8 +176,8 @@ export class CompaniesService {
   async delete(
     companiesDto: ContactsDto,
     req,
-  ): Promise<BaseResponse<DeleteResult>> {
-    const companies = await this.contactsRepository.findOne(companiesDto.id);
+  ): Promise<BaseResponse<Contacts>> {
+    const companies = await this.contactRespository.findOne({_id:companiesDto.id});
     if (!companies) {
       this.logsService.create({
         user_id: req.user.id,
@@ -171,7 +185,7 @@ export class CompaniesService {
         content: 'Company not found',
         module: 'companies',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Contacts>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'Company not found',
@@ -180,7 +194,7 @@ export class CompaniesService {
     }
 
     try {
-      const result = await this.contactsRepository.delete(companiesDto.id);
+      const result = await companies.remove();
       const { created_at, updated_at, ...rest } = companies;
       this.logsService.create({
         user_id: req.user.id,
@@ -188,7 +202,7 @@ export class CompaniesService {
         content: JSON.stringify(rest),
         module: 'companies',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Contacts>(
         HttpStatus.CREATED,
         'DELETED',
         'Company has been deleted',
@@ -210,7 +224,7 @@ export class CompaniesService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Contacts[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [companies, total] = await this.contactsRepository.findAndCount({
+      const companies = await this.contactRespository.find({
         take: size,
         skip: (page - 1) * size,
         order: {
@@ -221,7 +235,7 @@ export class CompaniesService {
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(companies.length)
         .build();
 
       return new BaseResponse<Contacts[]>(
