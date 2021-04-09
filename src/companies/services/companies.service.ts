@@ -13,14 +13,18 @@ import { ContactsDto } from 'src/contacts/dtos/contacts.dto';
 import { ContactsUpdateDto } from 'src/contacts/dtos/contacts.update.dto';
 import { LogsService } from 'src/logs/services/logs.service';
 import { InjectModel } from '@nestjs/mongoose';
-import { Contacts, ContactsDocument } from 'src/contacts/schemas/contacts.schema';
+import {
+  Contacts,
+  ContactsDocument,
+} from 'src/contacts/schemas/contacts.schema';
 import { Model } from 'mongoose';
 import dayjs = require('dayjs');
 
 @Injectable()
 export class CompaniesService {
   constructor(
-    @InjectModel(Contacts.name) private contactRespository: Model<ContactsDocument>,
+    @InjectModel(Contacts.name)
+    private contactRespository: Model<ContactsDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -35,7 +39,10 @@ export class CompaniesService {
       //   skip: (page - 1) * size,
       //   // order: orderBy
       // });
-      const contacts = await this.contactRespository.find({type: 'company'}).limit(size).skip(page - 1 * size);
+      const contacts = await this.contactRespository
+        .find({ type: 'company' })
+        .limit(size)
+        .skip(page - 1 * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
@@ -63,7 +70,7 @@ export class CompaniesService {
     // });
     const company = await this.contactRespository.findOne({
       _id: companiesDto.id,
-      type: 'company'
+      type: 'company',
     });
     if (!company) {
       throw new NotFoundException('Company not found');
@@ -87,7 +94,7 @@ export class CompaniesService {
     const found = await this.contactRespository.findOne({
       first_name: createContactsDto.first_name,
       last_name: createContactsDto.last_name,
-      type: 'company'
+      type: 'company',
     });
     if (found) {
       throw new BadRequestException('Record already exist');
@@ -128,7 +135,7 @@ export class CompaniesService {
     req,
   ): Promise<BaseResponse<Contacts>> {
     const { id } = updateContactsDto;
-    const found = await this.contactRespository.findOne({ _id:id });
+    const found = await this.contactRespository.findOne({ _id: id });
     if (!found) {
       return new BaseResponse<Contacts>(
         HttpStatus.NOT_FOUND,
@@ -177,7 +184,9 @@ export class CompaniesService {
     companiesDto: ContactsDto,
     req,
   ): Promise<BaseResponse<Contacts>> {
-    const companies = await this.contactRespository.findOne({_id:companiesDto.id});
+    const companies = await this.contactRespository.findOne({
+      _id: companiesDto.id,
+    });
     if (!companies) {
       this.logsService.create({
         user_id: req.user.id,
@@ -224,12 +233,13 @@ export class CompaniesService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Contacts[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const companies = await this.contactRespository.find({ filter })
-      .limit(size)
-      .skip((page - 1) * size)
-      .sort({
-        created_at: orderBy === orderBy ? -1 : 1,
-      });
+      const companies = await this.contactRespository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
+          created_at: orderBy === orderBy ? -1 : 1,
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)

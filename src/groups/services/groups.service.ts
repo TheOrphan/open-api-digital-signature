@@ -35,7 +35,10 @@ export class GroupsService {
       //   // order: orderBy
       // });
 
-      const groups = await this.groupsRespository.find().limit(size).skip(page - 1 * size);
+      const groups = await this.groupsRespository
+        .find()
+        .limit(size)
+        .skip(page - 1 * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
@@ -59,7 +62,7 @@ export class GroupsService {
 
   async getById(groupsDto: GroupsDto): Promise<BaseResponse<Groups>> {
     const groups = await this.groupsRespository.findOne({
-       _id: groupsDto.id
+      _id: groupsDto.id,
     });
     if (!groups) {
       throw new NotFoundException('Group not found');
@@ -74,7 +77,7 @@ export class GroupsService {
 
   async create(createGroupsDto: GroupsCreateDto, req): Promise<any> {
     const found = await this.groupsRespository.find({
-        name: createGroupsDto.name,
+      name: createGroupsDto.name,
     });
     if (found) {
       throw new BadRequestException('Record already exist');
@@ -115,7 +118,7 @@ export class GroupsService {
     req,
   ): Promise<BaseResponse<Groups>> {
     const { id } = updateGroupsDto;
-    const found = await this.groupsRespository.findOne({ _id:id });
+    const found = await this.groupsRespository.findOne({ _id: id });
     if (!found) {
       return new BaseResponse<Groups>(
         HttpStatus.NOT_FOUND,
@@ -160,7 +163,7 @@ export class GroupsService {
   }
 
   async delete(groupsDto: GroupsDto, req): Promise<BaseResponse<Groups>> {
-    const groups = await this.groupsRespository.findOne({_id:groupsDto.id});
+    const groups = await this.groupsRespository.findOne({ _id: groupsDto.id });
     if (!groups) {
       return new BaseResponse<Groups>(
         HttpStatus.NOT_FOUND,
@@ -200,12 +203,13 @@ export class GroupsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Groups[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const groups = await this.groupsRespository.find({ filter })
-      .limit(size)
-      .skip((page - 1) * size)
-      .sort({
-        created_at: orderBy === orderBy ? -1 : 1,
-      });
+      const groups = await this.groupsRespository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
+          created_at: orderBy === orderBy ? -1 : 1,
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)

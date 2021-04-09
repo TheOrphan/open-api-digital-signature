@@ -20,7 +20,8 @@ import dayjs = require('dayjs');
 @Injectable()
 export class ContactsService {
   constructor(
-    @InjectModel(Contacts.name) private contactsRepository: Model<ContactsDocument>,
+    @InjectModel(Contacts.name)
+    private contactsRepository: Model<ContactsDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -42,7 +43,10 @@ export class ContactsService {
       //   // order: orderBy
       // });
 
-      const contacts = await this.contactsRepository.find().limit(size).skip(page - 1 * size);
+      const contacts = await this.contactsRepository
+        .find()
+        .limit(size)
+        .skip(page - 1 * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
@@ -81,10 +85,8 @@ export class ContactsService {
 
   async create(createContactsDto: ContactsCreateDto, req): Promise<any> {
     const found = await this.contactsRepository.findOne({
-    
       first_name: createContactsDto.first_name,
       last_name: createContactsDto.last_name,
-    
     });
     if (found) {
       throw new BadRequestException('Record already exist');
@@ -125,7 +127,7 @@ export class ContactsService {
     req,
   ): Promise<BaseResponse<Contacts>> {
     const { id } = updateContactsDto;
-    const found = await this.contactsRepository.findOne({ _id:id });
+    const found = await this.contactsRepository.findOne({ _id: id });
     if (!found) {
       return new BaseResponse<Contacts>(
         HttpStatus.NOT_FOUND,
@@ -170,11 +172,10 @@ export class ContactsService {
     }
   }
 
-  async delete(
-    contactsDto: ContactsDto,
-    req,
-  ): Promise<BaseResponse<Contacts>> {
-    const contacts = await this.contactsRepository.findOne({_id:contactsDto.id});
+  async delete(contactsDto: ContactsDto, req): Promise<BaseResponse<Contacts>> {
+    const contacts = await this.contactsRepository.findOne({
+      _id: contactsDto.id,
+    });
     if (!contacts) {
       this.logsService.create({
         user_id: req.user.id,
@@ -220,12 +221,13 @@ export class ContactsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Contacts[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const contacts = await this.contactsRepository.find({ filter })
-      .limit(size)
-      .skip((page - 1) * size)
-      .sort({
-        created_at: orderBy === orderBy ? -1 : 1,
-      });
+      const contacts = await this.contactsRepository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
+          created_at: orderBy === orderBy ? -1 : 1,
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
