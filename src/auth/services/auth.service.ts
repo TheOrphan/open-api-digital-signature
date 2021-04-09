@@ -53,10 +53,9 @@ export class AuthService {
       throw new UnauthorizedException('User is deactivated');
     }
 
-    const result = await this.usersRepository.findOne({
-      select: ['id', 'email', 'sa_user', 'sa_pass'],
-      where: { email },
-    });
+    const result = await this.usersRepository
+      .findOne({ email })
+      .select('_id email sa_user sa_pass');
 
     const payload: JwtPayload = { email, id: result.id };
     const accessToken = this.jwtService.sign(payload);
