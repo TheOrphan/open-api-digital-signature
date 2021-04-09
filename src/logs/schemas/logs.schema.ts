@@ -18,11 +18,8 @@ export class Logs {
   @Prop({ type: String })
   module: string;
 
-  @Prop({
-    type: Date,
-    default: Date.now,
-  })
-  created_at: Date;
+  @Prop({ type: String })
+  created_at: string;
 }
 
 export const LogsSchema = SchemaFactory.createForClass(Logs);

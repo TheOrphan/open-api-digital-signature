@@ -5,7 +5,6 @@ import * as config from 'config';
 
 import { LogsController } from './controllers/logs.controller';
 import { LogsService } from './services/logs.service';
-import { LogsRepository } from './repositories/logs.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Logs, LogsSchema } from './schemas/logs.schema';
 
@@ -23,6 +22,6 @@ const jwt = config.get('jwt');
   ],
   exports: [LogsService],
   controllers: [LogsController],
-  providers: [LogsRepository, LogsService],
+  providers: [LogsService],
 })
 export class LogsModule {}

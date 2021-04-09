@@ -4,23 +4,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { LogsCreateDto } from '../dtos/logs.create.dto';
 import { LogsDto } from '../dtos/logs.dto';
 import { LogsUpdateDto } from '../dtos/logs.update.dto';
-import { Logs } from '../schemas/logs.entity';
-import { LogsRepository } from '../repositories/logs.repository';
-
+import { Logs, LogsDocument } from '../schemas/logs.schema';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
+import * as dayjs from 'dayjs';
 @Injectable()
 export class LogsService {
   constructor(
-    @InjectRepository(LogsRepository)
-    private logsRepository: LogsRepository,
+    @InjectModel(Logs.name) private logsRepository: Model<LogsDocument>,
   ) {}
 
   async getAllData(
@@ -28,17 +26,17 @@ export class LogsService {
   ): Promise<BaseResponse<Logs[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [logs, total] = await this.logsRepository.findAndCount({
-        relations: ['user_id', 'user_id.contact_id'],
-        take: size,
-        skip: (page - 1) * size,
-        order: { created_at: 'DESC' },
-      });
+      const logs = await this.logsRepository
+        .find()
+        .populate({ path: 'user_id', populate: { path: 'contact_id' } })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({ created_at: -1 });
 
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(logs.length)
         .build();
 
       return new BaseResponse<Logs[]>(
@@ -57,7 +55,7 @@ export class LogsService {
 
   async getById(logsDto: LogsDto): Promise<BaseResponse<Logs>> {
     const logs = await this.logsRepository.findOne({
-      where: { id: logsDto.id },
+      where: { _id: logsDto.id },
     });
     if (!logs) {
       throw new NotFoundException('Divison not found');
@@ -69,7 +67,9 @@ export class LogsService {
     try {
       const logs = new Logs();
       Object.assign(logs, createLogsDto);
-      const result = await logs.save();
+      logs.created_at = dayjs().format();
+      const createdData = new this.logsRepository(logs);
+      const result = await createdData.save();
       return new BaseResponse<Logs>(
         HttpStatus.CREATED,
         'CREATED',
@@ -83,13 +83,11 @@ export class LogsService {
     }
   }
 
-  async update(
-    updateLogsDto: LogsUpdateDto,
-  ): Promise<BaseResponse<UpdateResult>> {
+  async update(updateLogsDto: LogsUpdateDto): Promise<BaseResponse<Logs>> {
     const { id } = updateLogsDto;
-    const found = await this.logsRepository.findOne({ id });
+    const found = await this.logsRepository.findOne({ _id: id });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Logs>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `Divisi dengan ID: ${id} tidak ditemukan`,
@@ -98,11 +96,12 @@ export class LogsService {
     }
 
     try {
-      const logs = new Logs();
+      const logs = found;
       Object.assign(logs, updateLogsDto);
-      const result = await this.logsRepository.update(updateLogsDto.id, logs);
+      const updatedData = new this.logsRepository(logs);
+      const result = await updatedData.save();
 
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Logs>(
         HttpStatus.CREATED,
         'UPDATED',
         'Data Divisi berhasil diupdate',
@@ -115,10 +114,10 @@ export class LogsService {
     }
   }
 
-  async delete(logsDto: LogsDto): Promise<BaseResponse<DeleteResult>> {
-    const logs = await this.logsRepository.findOne(logsDto.id);
+  async delete(logsDto: LogsDto): Promise<BaseResponse<Logs>> {
+    const logs = await this.logsRepository.findOne({ _id: logsDto.id });
     if (!logs) {
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Logs>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'Logs not found',
@@ -127,8 +126,8 @@ export class LogsService {
     }
 
     try {
-      const result = await this.logsRepository.delete(logsDto.id);
-      return new BaseResponse<DeleteResult>(
+      const result = await logs.remove();
+      return new BaseResponse<Logs>(
         HttpStatus.CREATED,
         'DELETED',
         'Logs has been deleted',
@@ -144,18 +143,17 @@ export class LogsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Logs[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [logs, total] = await this.logsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
+      const logs = await this.logsRepository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
           created_at: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
-      });
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(logs.length)
         .build();
 
       return new BaseResponse<Logs[]>(
