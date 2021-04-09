@@ -4,20 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { ContactsCreateDto } from 'src/contacts/dtos/contacts.create.dto';
 import { ContactsDto } from 'src/contacts/dtos/contacts.dto';
 import { ContactsUpdateDto } from 'src/contacts/dtos/contacts.update.dto';
-import { ContactsRepository } from 'src/contacts/repositories/contacts.repository';
 import { LogsService } from 'src/logs/services/logs.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Contacts, ContactsDocument } from 'src/contacts/schemas/contacts.schema';
 import { Model } from 'mongoose';
+import dayjs = require('dayjs');
 
 @Injectable()
 export class CompaniesService {
@@ -98,6 +96,7 @@ export class CompaniesService {
       const contacts = new Contacts();
       Object.assign(contacts, createContactsDto);
       const createData = new this.contactRespository(contacts);
+      contacts.created_at = dayjs().format();
       const result = await createData.save();
       this.logsService.create({
         user_id: req.user.id,
@@ -146,6 +145,7 @@ export class CompaniesService {
       //   updateContactsDto.id,
       //   companies,
       // );
+      companies.updated_at = dayjs().format();
       const createData = new this.contactRespository(companies);
       const result = await createData.save();
       this.logsService.create({
@@ -224,13 +224,11 @@ export class CompaniesService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Contacts[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const companies = await this.contactRespository.find({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
-          created_at: orderBy === orderBy ? -1 : 1,
-        },
-        where: { ...filter, type: 'company' },
+      const companies = await this.contactRespository.find({ filter })
+      .limit(size)
+      .skip((page - 1) * size)
+      .sort({
+        created_at: orderBy === orderBy ? -1 : 1,
       });
       const pagination = new PaginationBuilder()
         .page(page)

@@ -4,24 +4,23 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { GroupsCreateDto } from '../dtos/groups.create.dto';
 import { GroupsDto } from '../dtos/groups.dto';
 import { GroupsUpdateDto } from '../dtos/groups.update.dto';
-import { Groups } from '../entities/groups.entity';
-import { GroupsRepository } from '../repositories/groups.repository';
 import { LogsService } from 'src/logs/services/logs.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Groups, GroupsDocument } from '../schemas/groups.schema';
+import { Model } from 'mongoose';
+import dayjs = require('dayjs');
 
 @Injectable()
 export class GroupsService {
   constructor(
-    @InjectRepository(GroupsRepository)
-    private groupsRepository: GroupsRepository,
+    @InjectModel(Groups.name) private groupsRespository: Model<GroupsDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -30,16 +29,18 @@ export class GroupsService {
   ): Promise<BaseResponse<Groups[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [groups, total] = await this.groupsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        // order: orderBy
-      });
+      // const [groups, total] = await this.groupsRespository.findAndCount({
+      //   take: size,
+      //   skip: (page - 1) * size,
+      //   // order: orderBy
+      // });
+
+      const groups = await this.groupsRespository.find().limit(size).skip(page - 1 * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(groups.length)
         .build();
 
       return new BaseResponse<Groups[]>(
@@ -57,8 +58,8 @@ export class GroupsService {
   }
 
   async getById(groupsDto: GroupsDto): Promise<BaseResponse<Groups>> {
-    const groups = await this.groupsRepository.findOne({
-      where: { id: groupsDto.id },
+    const groups = await this.groupsRespository.findOne({
+       _id: groupsDto.id
     });
     if (!groups) {
       throw new NotFoundException('Group not found');
@@ -72,10 +73,8 @@ export class GroupsService {
   }
 
   async create(createGroupsDto: GroupsCreateDto, req): Promise<any> {
-    const found = await this.groupsRepository.findOne({
-      where: {
+    const found = await this.groupsRespository.find({
         name: createGroupsDto.name,
-      },
     });
     if (found) {
       throw new BadRequestException('Record already exist');
@@ -83,7 +82,9 @@ export class GroupsService {
     try {
       const groups = new Groups();
       Object.assign(groups, createGroupsDto);
-      const result = await groups.save();
+      const createData = new this.groupsRespository(groups);
+      groups.created_at = dayjs().format();
+      const result = await createData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'create success',
@@ -112,11 +113,11 @@ export class GroupsService {
   async update(
     updateGroupsDto: GroupsUpdateDto,
     req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Groups>> {
     const { id } = updateGroupsDto;
-    const found = await this.groupsRepository.findOne({ id });
+    const found = await this.groupsRespository.findOne({ _id:id });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Groups>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `Group with ID: ${id} not found`,
@@ -124,19 +125,22 @@ export class GroupsService {
       );
     }
     try {
-      const groups = new Groups();
+      const groups = found;
       Object.assign(groups, updateGroupsDto);
-      const result = await this.groupsRepository.update(
-        updateGroupsDto.id,
-        groups,
-      );
+      // const result = await this.gro.update(
+      //   updateGroupsDto.id,
+      //   groups,
+      // );
+      groups.updated_at = dayjs().format();
+      const createData = new this.groupsRespository(groups);
+      const result = await createData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'update success',
         content: JSON.stringify(updateGroupsDto),
         module: 'groups',
       });
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Groups>(
         HttpStatus.CREATED,
         'UPDATED',
         'Group successfully updated',
@@ -155,10 +159,10 @@ export class GroupsService {
     }
   }
 
-  async delete(groupsDto: GroupsDto, req): Promise<BaseResponse<DeleteResult>> {
-    const groups = await this.groupsRepository.findOne(groupsDto.id);
+  async delete(groupsDto: GroupsDto, req): Promise<BaseResponse<Groups>> {
+    const groups = await this.groupsRespository.findOne({_id:groupsDto.id});
     if (!groups) {
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Groups>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'Groups not found',
@@ -167,14 +171,14 @@ export class GroupsService {
     }
 
     try {
-      const result = await this.groupsRepository.delete(groupsDto.id);
+      const result = await groups.remove();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'delete success',
         content: JSON.stringify(groups),
         module: 'groups',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Groups>(
         HttpStatus.CREATED,
         'DELETED',
         'Groups has been deleted',
@@ -196,18 +200,16 @@ export class GroupsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Groups[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [groups, total] = await this.groupsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
-          name: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
+      const groups = await this.groupsRespository.find({ filter })
+      .limit(size)
+      .skip((page - 1) * size)
+      .sort({
+        created_at: orderBy === orderBy ? -1 : 1,
       });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(groups.length)
         .build();
 
       return new BaseResponse<Groups[]>(

@@ -4,20 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { ContactsCreateDto } from '../dtos/contacts.create.dto';
 import { ContactsDto } from '../dtos/contacts.dto';
 import { ContactsUpdateDto } from '../dtos/contacts.update.dto';
-// import { ContactsRepository } from '../repositories/contacts.repository';
 import { LogsService } from 'src/logs/services/logs.service';
 import { Contacts, ContactsDocument } from '../schemas/contacts.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import dayjs = require('dayjs');
 
 @Injectable()
 export class ContactsService {
@@ -94,6 +92,7 @@ export class ContactsService {
     try {
       const contacts = new Contacts();
       Object.assign(contacts, createContactsDto);
+      contacts.created_at = dayjs().format();
       const createData = new this.contactsRepository(contacts);
       const result = await createData.save();
       this.logsService.create({
@@ -143,6 +142,7 @@ export class ContactsService {
       //   updateContactsDto.id,
       //   contacts,
       // );
+      contacts.updated_at = dayjs().format();
       const createData = new this.contactsRepository(contacts);
       const result = await createData.save();
       this.logsService.create({
@@ -220,13 +220,11 @@ export class ContactsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Contacts[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const contacts = await this.contactsRepository.find({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
-          created_at: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
+      const contacts = await this.contactsRepository.find({ filter })
+      .limit(size)
+      .skip((page - 1) * size)
+      .sort({
+        created_at: orderBy === orderBy ? -1 : 1,
       });
       const pagination = new PaginationBuilder()
         .page(page)
