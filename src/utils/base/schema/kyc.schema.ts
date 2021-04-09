@@ -1,6 +1,8 @@
-import { Prop, Schema } from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Users } from 'src/users/schemas/users.schema';
 import * as mongoose from 'mongoose';
+
+export type KYCDocument = KYC & mongoose.Document;
 
 @Schema()
 export class KYC {
@@ -42,3 +44,5 @@ export class KYC {
   })
   updated_at: string;
 }
+
+export const KYCSchema = SchemaFactory.createForClass(KYC);
