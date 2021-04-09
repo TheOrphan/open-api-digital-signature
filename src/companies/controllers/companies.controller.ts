@@ -44,7 +44,7 @@ export class CompaniesController {
   async update(
     @Body() ContactsUpdateDto: ContactsUpdateDto,
     @Req() req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Contacts>> {
     return await this.companiesService.update(ContactsUpdateDto, req);
   }
 
@@ -52,7 +52,7 @@ export class CompaniesController {
   async delete(
     @Body() companiesDto: ContactsDto,
     @Req() req,
-  ): Promise<BaseResponse<DeleteResult>> {
+  ): Promise<BaseResponse<Contacts>> {
     return this.companiesService.delete(companiesDto, req);
   }
 
