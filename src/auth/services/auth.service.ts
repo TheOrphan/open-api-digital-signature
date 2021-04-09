@@ -5,7 +5,6 @@ import {
   HttpStatus,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 
@@ -15,17 +14,17 @@ import * as bcrypt from 'bcryptjs';
 import { LoginResponse } from 'src/utils/base/response/login.response';
 import { JwtPayload } from 'src/utils/jwt/jwt-payload.interface';
 import { UserLoginDto } from '../dtos/user-login.dto';
-import { UsersRepository } from '../../users/repositories/users.repository';
-import { Users } from '../../users/entities/users.entity';
 import { LogsService } from 'src/logs/services/logs.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Users, UsersDocument } from 'src/users/schemas/users.schema';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class AuthService {
   private logger = new Logger('AuthService');
 
   constructor(
-    @InjectRepository(UsersRepository)
-    private usersRepository: UsersRepository,
+    @InjectModel(Users.name) private usersRepository: Model<UsersDocument>,
     private logsService: LogsService,
     private jwtService: JwtService,
   ) {}

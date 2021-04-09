@@ -5,7 +5,6 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { SettingsCreateDto } from '../dtos/settings.create.dto';
 import { SettingsDto } from '../dtos/settings.dto';
 import { SettingsUpdateDto } from '../dtos/settings.update.dto';
@@ -45,7 +44,7 @@ export class SettingsController {
   async update(
     @Body() SettingsUpdateDto: SettingsUpdateDto,
     @Req() req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Settings>> {
     return await this.settingsService.update(SettingsUpdateDto, req);
   }
 
@@ -53,7 +52,7 @@ export class SettingsController {
   async delete(
     @Body() settingsDto: SettingsDto,
     @Req() req,
-  ): Promise<BaseResponse<DeleteResult>> {
+  ): Promise<BaseResponse<Settings>> {
     return this.settingsService.delete(settingsDto, req);
   }
 

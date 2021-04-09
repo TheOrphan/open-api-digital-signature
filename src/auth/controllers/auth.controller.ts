@@ -9,8 +9,8 @@ import { AuthGuard } from '@nestjs/passport';
 import { LoginResponse } from 'src/utils/base/response/login.response';
 import { BaseResponse } from 'src/utils/base/response/base.response';
 import { UserLoginDto } from '../dtos/user-login.dto';
-import { Users } from '../../users/entities/users.entity';
 import { AuthService } from '../services/auth.service';
+import { Users } from 'src/users/schemas/users.schema';
 
 @ApiTags('Auth')
 @Controller('auth')
