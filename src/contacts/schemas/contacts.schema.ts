@@ -20,6 +20,7 @@ export class Contacts extends BaseCustomSchema {
 
   @Prop([String])
   type: string;
+  
 }
 
 export const ContactsSchema = SchemaFactory.createForClass(Contacts);
