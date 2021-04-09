@@ -5,12 +5,11 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { ContactsCreateDto } from 'src/contacts/dtos/contacts.create.dto';
 import { ContactsDto } from 'src/contacts/dtos/contacts.dto';
 import { ContactsUpdateDto } from 'src/contacts/dtos/contacts.update.dto';
-import { Contacts } from 'src/contacts/entities/contacts.entity';
 import { CompaniesService } from '../services/companies.service';
+import { Contacts } from 'src/contacts/schemas/contacts.schema';
 
 @ApiTags('Companies')
 @ApiBearerAuth()
