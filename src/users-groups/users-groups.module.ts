@@ -5,7 +5,6 @@ import * as config from 'config';
 
 import { UsersGroupsService } from './services/users-groups.service';
 import { UsersGroupsController } from './controllers/users-groups.controller';
-import { UsersGroupsRepository } from './repositories/users-groups.repository';
 import { LogsModule } from 'src/logs/logs.module';
 import { UsersGroups, UsersGroupsSchema } from './schemas/users-groups.schema';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -26,7 +25,7 @@ const jwt = config.get('jwt');
       { name: UsersGroups.name, schema: UsersGroupsSchema },
     ]),
   ],
-  providers: [UsersGroupsRepository, UsersGroupsService],
+  providers: [UsersGroupsService],
   controllers: [UsersGroupsController],
   exports: [UsersGroupsService],
 })

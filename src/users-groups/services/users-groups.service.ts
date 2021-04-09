@@ -4,24 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { UsersGroupsCreateDto } from '../dtos/users-groups.create.dto';
 import { UsersGroupsDto } from '../dtos/users-groups.dto';
 import { UsersGroupsUpdateDto } from '../dtos/users-groups.update.dto';
-import { UsersGroups } from '../schemas/users-groups.schema';
-import { UsersGroupsRepository } from '../repositories/users-groups.repository';
+import {
+  UsersGroups,
+  UsersGroupsDocument,
+} from '../schemas/users-groups.schema';
 import { LogsService } from 'src/logs/services/logs.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class UsersGroupsService {
   constructor(
-    @InjectRepository(UsersGroupsRepository)
-    private usersGroupsRepository: UsersGroupsRepository,
+    @InjectModel(UsersGroups.name)
+    private usersGroupsRepository: Model<UsersGroupsDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -30,20 +32,16 @@ export class UsersGroupsService {
   ): Promise<BaseResponse<UsersGroups[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [
-        usersGroups,
-        total,
-      ] = await this.usersGroupsRepository.findAndCount({
-        relations: ['user_id', 'group_id', 'user_id.contact_id'],
-        take: size,
-        skip: (page - 1) * size,
-        // order: orderBy
-      });
+      const usersGroups = await this.usersGroupsRepository
+        .find()
+        .populate({ path: 'contact_id' })
+        .limit(size)
+        .skip((page - 1) * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(usersGroups.length)
         .build();
 
       return new BaseResponse<UsersGroups[]>(
@@ -64,7 +62,7 @@ export class UsersGroupsService {
     usersGroupsDto: UsersGroupsDto,
   ): Promise<BaseResponse<UsersGroups>> {
     const usersGroups = await this.usersGroupsRepository.findOne({
-      where: { id: usersGroupsDto.id },
+      where: { _id: usersGroupsDto.id },
     });
     if (!usersGroups) {
       throw new NotFoundException('Divison not found');
@@ -78,10 +76,20 @@ export class UsersGroupsService {
   }
 
   async create(createUsersGroupsDto: UsersGroupsCreateDto, req): Promise<any> {
+    const found = await this.usersGroupsRepository.findOne({
+      where: {
+        user_id: createUsersGroupsDto.user_id,
+        group_id: createUsersGroupsDto.group_id,
+      },
+    });
+    if (found) {
+      throw new BadRequestException('Record already exist');
+    }
     try {
       const usersGroups = new UsersGroups();
       Object.assign(usersGroups, createUsersGroupsDto);
-      const result = await usersGroups.save();
+      const createdData = new this.usersGroupsRepository(usersGroups);
+      const result = await createdData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'create success',
@@ -110,13 +118,13 @@ export class UsersGroupsService {
   async update(
     updateUsersGroupsDto: UsersGroupsUpdateDto,
     req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<UsersGroups>> {
     const { id } = updateUsersGroupsDto;
-    const found = await this.usersGroupsRepository.findOne(id, {
-      relations: ['user_id', 'group_id'],
-    });
+    const found = await (await this.usersGroupsRepository.findOne({ _id: id }))
+      .populate({ path: 'user_id' })
+      .populate({ path: 'group_id' });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<UsersGroups>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `Users Groups with ID: ${id} not found`,
@@ -125,19 +133,17 @@ export class UsersGroupsService {
     }
 
     try {
-      const usersGroups = new UsersGroups();
+      const usersGroups = found;
       Object.assign(usersGroups, updateUsersGroupsDto);
-      const result = await this.usersGroupsRepository.update(
-        updateUsersGroupsDto.id,
-        usersGroups,
-      );
+      const updatedData = new this.usersGroupsRepository(usersGroups);
+      const result = await updatedData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'update success',
         content: JSON.stringify(found),
         module: 'users groups',
       });
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<UsersGroups>(
         HttpStatus.CREATED,
         'UPDATED',
         'Users Groups successfully updated',
@@ -159,11 +165,12 @@ export class UsersGroupsService {
   async delete(
     usersGroupsDto: UsersGroupsDto,
     req,
-  ): Promise<BaseResponse<DeleteResult>> {
+  ): Promise<BaseResponse<UsersGroups>> {
     const { id } = usersGroupsDto;
-    const usersGroups = await this.usersGroupsRepository.findOne(id, {
-      relations: ['user_id', 'group_id'],
-    });
+    const usersGroups = await this.usersGroupsRepository
+      .findOne({ _id: id })
+      .populate({ path: 'user_id' })
+      .populate({ path: 'group_id' });
     if (!usersGroups) {
       this.logsService.create({
         user_id: req.user.id,
@@ -171,7 +178,7 @@ export class UsersGroupsService {
         content: 'Users groups not found',
         module: 'users groups',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<UsersGroups>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'Users Groups not found',
@@ -180,14 +187,14 @@ export class UsersGroupsService {
     }
 
     try {
-      const result = await this.usersGroupsRepository.delete(id);
+      const result = await usersGroups.remove();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'delete success',
         content: JSON.stringify(usersGroups),
         module: 'users groups',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<UsersGroups>(
         HttpStatus.CREATED,
         'DELETED',
         'Users Groups has been deleted',
@@ -203,21 +210,17 @@ export class UsersGroupsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<UsersGroups[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [
-        usersGroups,
-        total,
-      ] = await this.usersGroupsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
-          group_id: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
-      });
+      const usersGroups = await this.usersGroupsRepository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
+          created_at: orderBy === orderBy ? -1 : 1,
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(usersGroups.length)
         .build();
 
       return new BaseResponse<UsersGroups[]>(

@@ -5,7 +5,6 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { UsersGroupsCreateDto } from '../dtos/users-groups.create.dto';
 import { UsersGroupsDto } from '../dtos/users-groups.dto';
 import { UsersGroupsUpdateDto } from '../dtos/users-groups.update.dto';
@@ -45,7 +44,7 @@ export class UsersGroupsController {
   async update(
     @Body() UsersGroupsUpdateDto: UsersGroupsUpdateDto,
     @Req() req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<UsersGroups>> {
     return await this.usersGroupsService.update(UsersGroupsUpdateDto, req);
   }
 
@@ -53,7 +52,7 @@ export class UsersGroupsController {
   async delete(
     @Body() usersGroupsDto: UsersGroupsDto,
     @Req() req,
-  ): Promise<BaseResponse<DeleteResult>> {
+  ): Promise<BaseResponse<UsersGroups>> {
     return this.usersGroupsService.delete(usersGroupsDto, req);
   }
 
