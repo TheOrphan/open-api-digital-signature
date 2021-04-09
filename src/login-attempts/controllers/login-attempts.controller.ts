@@ -5,11 +5,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { LoginAttemptsCreateDto } from '../dtos/login-attempts.create.dto';
 import { LoginAttemptsDto } from '../dtos/login-attempts.dto';
 import { LoginAttemptsUpdateDto } from '../dtos/login-attempts.update.dto';
-import { LoginAttempts } from '../entities/login-attempts.entity';
+import { LoginAttempts } from '../schemas/login-attempts.schema';
 import { LoginAttemptsService } from '../services/login-attempts.service';
 
 @ApiTags('Login attempts')
@@ -43,14 +42,14 @@ export class LoginAttemptsController {
   @Post('update')
   async update(
     @Body() LoginAttemptsUpdateDto: LoginAttemptsUpdateDto,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<LoginAttempts>> {
     return await this.LoginAttemptsService.update(LoginAttemptsUpdateDto);
   }
 
   @Post('delete')
   async delete(
     @Body() LoginAttemptsDto: LoginAttemptsDto,
-  ): Promise<BaseResponse<DeleteResult>> {
+  ): Promise<BaseResponse<LoginAttempts>> {
     return this.LoginAttemptsService.delete(LoginAttemptsDto);
   }
 

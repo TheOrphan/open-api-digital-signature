@@ -5,7 +5,6 @@ import * as config from 'config';
 
 import { LoginAttemptsController } from './controllers/login-attempts.controller';
 import { LoginAttemptsService } from './services/login-attempts.service';
-import { LoginAttemptsRepository } from './repositories/login-attempts.repository';
 import { MongooseModule } from '@nestjs/mongoose';
 import {
   LoginAttempts,
@@ -28,6 +27,6 @@ const jwt = config.get('jwt');
     ]),
   ],
   controllers: [LoginAttemptsController],
-  providers: [LoginAttemptsService, LoginAttemptsRepository],
+  providers: [LoginAttemptsService],
 })
 export class LoginAttemptsModule {}

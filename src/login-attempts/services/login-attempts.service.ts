@@ -4,23 +4,26 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { LoginAttemptsCreateDto } from '../dtos/login-attempts.create.dto';
 import { LoginAttemptsDto } from '../dtos/login-attempts.dto';
 import { LoginAttemptsUpdateDto } from '../dtos/login-attempts.update.dto';
-import { LoginAttempts } from '../entities/login-attempts.entity';
-import { LoginAttemptsRepository } from '../repositories/login-attempts.repository';
+import {
+  LoginAttempts,
+  LoginAttemptsDocument,
+} from '../schemas/login-attempts.schema';
+import * as dayjs from 'dayjs';
 
 @Injectable()
 export class LoginAttemptsService {
   constructor(
-    @InjectRepository(LoginAttemptsRepository)
-    private loginAttemptsRepository: LoginAttemptsRepository,
+    @InjectModel(LoginAttempts.name)
+    private loginAttemptsRepository: Model<LoginAttemptsDocument>,
   ) {}
 
   async getAllData(
@@ -28,19 +31,15 @@ export class LoginAttemptsService {
   ): Promise<BaseResponse<LoginAttempts[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [
-        loginAttempts,
-        total,
-      ] = await this.loginAttemptsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        // order: orderBy
-      });
+      const loginAttempts = await this.loginAttemptsRepository
+        .find()
+        .limit(size)
+        .skip((page - 1) * size);
 
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(loginAttempts.length)
         .build();
 
       return new BaseResponse<LoginAttempts[]>(
@@ -61,7 +60,7 @@ export class LoginAttemptsService {
     loginAttemptsDto: LoginAttemptsDto,
   ): Promise<BaseResponse<LoginAttempts>> {
     const loginAttempts = await this.loginAttemptsRepository.findOne({
-      where: { id: loginAttemptsDto.id },
+      where: { _id: loginAttemptsDto.id },
     });
     if (!loginAttempts) {
       throw new NotFoundException('Divison not found');
@@ -78,7 +77,9 @@ export class LoginAttemptsService {
     try {
       const loginAttempts = new LoginAttempts();
       Object.assign(loginAttempts, createLoginAttemptsDto);
-      const result = await loginAttempts.save();
+      loginAttempts.created_at = dayjs().format();
+      const createdData = new this.loginAttemptsRepository(loginAttempts);
+      const result = await createdData.save();
       return new BaseResponse<LoginAttempts>(
         HttpStatus.CREATED,
         'CREATED',
@@ -94,11 +95,11 @@ export class LoginAttemptsService {
 
   async update(
     updateLoginAttemptsDto: LoginAttemptsUpdateDto,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<LoginAttempts>> {
     const { id } = updateLoginAttemptsDto;
     const found = await this.loginAttemptsRepository.findOne({ id });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<LoginAttempts>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `Divisi dengan ID: ${id} tidak ditemukan`,
@@ -107,14 +108,13 @@ export class LoginAttemptsService {
     }
 
     try {
-      const loginAttempts = new LoginAttempts();
+      const loginAttempts = found;
       Object.assign(loginAttempts, updateLoginAttemptsDto);
-      const result = await this.loginAttemptsRepository.update(
-        updateLoginAttemptsDto.id,
-        loginAttempts,
-      );
+      loginAttempts.updated_at = dayjs().format();
+      const updatedData = new this.loginAttemptsRepository(loginAttempts);
+      const result = await updatedData.save();
 
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<LoginAttempts>(
         HttpStatus.CREATED,
         'UPDATED',
         'Data Divisi berhasil diupdate',
@@ -129,12 +129,12 @@ export class LoginAttemptsService {
 
   async delete(
     loginAttemptsDto: LoginAttemptsDto,
-  ): Promise<BaseResponse<DeleteResult>> {
-    const loginAttempts = await this.loginAttemptsRepository.findOne(
-      loginAttemptsDto.id,
-    );
+  ): Promise<BaseResponse<LoginAttempts>> {
+    const loginAttempts = await this.loginAttemptsRepository.findOne({
+      _id: loginAttemptsDto.id,
+    });
     if (!loginAttempts) {
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<LoginAttempts>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'LoginAttempts not found',
@@ -143,10 +143,8 @@ export class LoginAttemptsService {
     }
 
     try {
-      const result = await this.loginAttemptsRepository.delete(
-        loginAttemptsDto.id,
-      );
-      return new BaseResponse<DeleteResult>(
+      const result = await loginAttempts.remove();
+      return new BaseResponse<LoginAttempts>(
         HttpStatus.CREATED,
         'DELETED',
         'LoginAttempts has been deleted',
@@ -162,21 +160,17 @@ export class LoginAttemptsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<LoginAttempts[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [
-        loginAttempts,
-        total,
-      ] = await this.loginAttemptsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
-          time: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
-      });
+      const loginAttempts = await this.loginAttemptsRepository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
+          created_at: orderBy === orderBy ? -1 : 1,
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(loginAttempts.length)
         .build();
 
       return new BaseResponse<LoginAttempts[]>(
