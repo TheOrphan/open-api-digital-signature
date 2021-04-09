@@ -5,11 +5,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { LogsCreateDto } from '../dtos/logs.create.dto';
 import { LogsDto } from '../dtos/logs.dto';
 import { LogsUpdateDto } from '../dtos/logs.update.dto';
-import { Logs } from '../schemas/logs.entity';
+import { Logs } from '../schemas/logs.schema';
 import { LogsService } from '../services/logs.service';
 
 @ApiTags('Logs')
@@ -41,12 +40,12 @@ export class LogsController {
   @Post('update')
   async update(
     @Body() LogsUpdateDto: LogsUpdateDto,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Logs>> {
     return await this.logsService.update(LogsUpdateDto);
   }
 
   @Post('delete')
-  async delete(@Body() logsDto: LogsDto): Promise<BaseResponse<DeleteResult>> {
+  async delete(@Body() logsDto: LogsDto): Promise<BaseResponse<Logs>> {
     return this.logsService.delete(logsDto);
   }
 

@@ -4,24 +4,24 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { SettingsCreateDto } from '../dtos/settings.create.dto';
 import { SettingsDto } from '../dtos/settings.dto';
 import { SettingsUpdateDto } from '../dtos/settings.update.dto';
-import { Settings } from '../entities/settings.entity';
-import { SettingsRepository } from '../repositories/settings.repository';
 import { LogsService } from 'src/logs/services/logs.service';
-
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import * as dayjs from 'dayjs';
+import { Settings, SettingsDocument } from '../schemas/settings.schema';
+import { settings } from 'cluster';
 @Injectable()
 export class SettingsService {
   constructor(
-    @InjectRepository(SettingsRepository)
-    private settingsRepository: SettingsRepository,
+    @InjectModel(Settings.name)
+    private settingsRepository: Model<SettingsDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -30,16 +30,12 @@ export class SettingsService {
   ): Promise<BaseResponse<Settings[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [settings, total] = await this.settingsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        // order: orderBy
-      });
+      const settings = await this.settingsRepository.find();
 
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(settings.length)
         .build();
 
       return new BaseResponse<Settings[]>(
@@ -58,7 +54,7 @@ export class SettingsService {
 
   async getById(settingsDto: SettingsDto): Promise<BaseResponse<Settings>> {
     const settings = await this.settingsRepository.findOne({
-      where: { id: settingsDto.id },
+      where: { _id: settingsDto.id },
     });
     if (!settings) {
       throw new NotFoundException('Divison not found');
@@ -83,7 +79,8 @@ export class SettingsService {
     try {
       const settings = new Settings();
       Object.assign(settings, createSettingsDto);
-      const result = await settings.save();
+      const createdData = new this.settingsRepository(settings);
+      const result = await createdData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'create success',
@@ -112,11 +109,11 @@ export class SettingsService {
   async update(
     updateSettingsDto: SettingsUpdateDto,
     req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Settings>> {
     const { id } = updateSettingsDto;
-    const found = await this.settingsRepository.findOne({ id });
+    const found = await this.settingsRepository.findOne({ _id: id });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Settings>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `Setting with ID: ${id} not found`,
@@ -125,19 +122,17 @@ export class SettingsService {
     }
 
     try {
-      const settings = new Settings();
+      const settings = found;
       Object.assign(settings, updateSettingsDto);
-      const result = await this.settingsRepository.update(
-        updateSettingsDto.id,
-        settings,
-      );
+      const updatedData = new this.settingsRepository(settings);
+      const result = await updatedData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'update success',
         content: JSON.stringify(updateSettingsDto),
         module: 'settings',
       });
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Settings>(
         HttpStatus.CREATED,
         'UPDATED',
         'Setting successfully updated',
@@ -156,11 +151,10 @@ export class SettingsService {
     }
   }
 
-  async delete(
-    settingsDto: SettingsDto,
-    req,
-  ): Promise<BaseResponse<DeleteResult>> {
-    const settings = await this.settingsRepository.findOne(settingsDto.id);
+  async delete(settingsDto: SettingsDto, req): Promise<BaseResponse<Settings>> {
+    const settings = await this.settingsRepository.findOne({
+      _id: settingsDto.id,
+    });
     if (!settings) {
       this.logsService.create({
         user_id: req.user.id,
@@ -168,7 +162,7 @@ export class SettingsService {
         content: 'Settings not found',
         module: 'settings',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Settings>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'Settings not found',
@@ -177,14 +171,14 @@ export class SettingsService {
     }
 
     try {
-      const result = await this.settingsRepository.delete(settingsDto.id);
+      const result = await settings.remove();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'delete success',
         content: JSON.stringify(settings),
         module: 'settings',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Settings>(
         HttpStatus.CREATED,
         'DELETED',
         'Settings has been deleted',
@@ -206,18 +200,17 @@ export class SettingsService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Settings[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [settings, total] = await this.settingsRepository.findAndCount({
-        take: size,
-        skip: (page - 1) * size,
-        order: {
-          key: orderBy === orderBy ? -1 : 1,
-        },
-        where: filter,
-      });
+      const settings = await this.settingsRepository
+        .find({ filter })
+        .limit(size)
+        .skip((page - 1) * size)
+        .sort({
+          created_at: orderBy === orderBy ? -1 : 1,
+        });
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(settings.length)
         .build();
 
       return new BaseResponse<Settings[]>(

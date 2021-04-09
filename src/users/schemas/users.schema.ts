@@ -43,18 +43,21 @@ export class Users {
   active: number;
 
   @Prop({
-    type: Date,
+    type: String,
     required: true,
-    default: Date.now,
   })
-  last_login: Date;
+  last_login: string;
 
   @Prop({
-    type: Date,
+    type: String,
     required: true,
-    default: Date.now,
   })
-  created_at: Date;
+  created_at: string;
+
+  @Prop({
+    type: String,
+  })
+  updated_at: string;
 }
 
 export const UsersSchema = SchemaFactory.createForClass(Users);
