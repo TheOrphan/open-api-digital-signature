@@ -21,12 +21,6 @@ export class Users {
   @Prop({ type: String })
   password: string;
 
-  @Prop({ type: String })
-  sa_user: string;
-
-  @Prop({ type: String })
-  sa_pass: string;
-
   @Prop({ type: String, unique: true })
   email: string;
 

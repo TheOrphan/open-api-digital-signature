@@ -5,8 +5,6 @@ export class UsersCreateDto {
   username: string;
   password: string;
   email: string;
-  sa_user: string;
-  sa_pass: string;
   activation_code: string;
   forgotten_password_code: string;
   forgotten_password_time: number;
