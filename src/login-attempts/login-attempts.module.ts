@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import * as config from 'config';
 
 import { LoginAttemptsController } from './controllers/login-attempts.controller';
 import { LoginAttemptsService } from './services/login-attempts.service';
 import { LoginAttemptsRepository } from './repositories/login-attempts.repository';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  LoginAttempts,
+  LoginAttemptsSchema,
+} from './schemas/login-attempts.schema';
 
 const jwt = config.get('jwt');
 
@@ -19,9 +23,11 @@ const jwt = config.get('jwt');
         expiresIn: jwt.expires,
       },
     }),
-    TypeOrmModule.forFeature([LoginAttemptsRepository]),
+    MongooseModule.forFeature([
+      { name: LoginAttempts.name, schema: LoginAttemptsSchema },
+    ]),
   ],
   controllers: [LoginAttemptsController],
-  providers: [LoginAttemptsService],
+  providers: [LoginAttemptsService, LoginAttemptsRepository],
 })
 export class LoginAttemptsModule {}

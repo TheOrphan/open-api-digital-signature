@@ -5,7 +5,12 @@ export class BaseCustomSchema {
   @Prop({
     type: Date,
     required: true,
-    default: Date.now,
   })
   created_at: Date;
+
+  @Prop({
+    type: Date,
+    required: true,
+  })
+  updated_at: Date;
 }

@@ -5,24 +5,22 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { InjectRepository } from '@nestjs/typeorm';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { UsersCreateDto } from '../dtos/users.create.dto';
 import { UsersDto } from '../dtos/users.dto';
 import { UsersUpdateDto } from '../dtos/users.update.dto';
-import { Users } from '../entities/users.entity';
-import { UsersRepository } from 'src/users/repositories/users.repository';
 import { LogsService } from 'src/logs/services/logs.service';
+import { Users, UsersDocument } from '../schemas/users.schema';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(UsersRepository)
-    private usersRepository: UsersRepository,
+    @InjectModel(Users.name) private usersRepository: Model<UsersDocument>,
     private logsService: LogsService,
   ) {}
 
@@ -31,14 +29,14 @@ export class UsersService {
   ): Promise<BaseResponse<Users[]>> {
     const { size, page, orderBy } = getAllDataDto;
     try {
-      const [users, total] = await this.usersRepository.findAndCount({
+      const users = await this.usersRepository.find({
         relations: ['contact_id'],
         take: size,
         skip: (page - 1) * size,
         cache: true,
         // order: orderBy
       });
-
+      const total = users.length;
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
@@ -86,9 +84,9 @@ export class UsersService {
       const hashed = await this.hashPassword(password || '12345678');
       const users = new Users();
       Object.assign(users, createUsersDto);
-      console.log(createUsersDto);
       users.password = hashed;
-      const result = await users.save();
+      const createdData = new this.usersRepository(users);
+      const result = await createdData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: 'create success',
@@ -117,29 +115,26 @@ export class UsersService {
   async update(
     updateUsersDto: UsersUpdateDto,
     req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Users>> {
     const { password, id, quota_limit, active, email } = updateUsersDto;
-    const found = await this.usersRepository.findOne({ id });
+    const found = await this.usersRepository.findOne({ _id: id });
     if (!found) {
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Users>(
         HttpStatus.NOT_FOUND,
         'ERROR',
         `User with ID: ${id} not found`,
         null,
       );
     }
-
     try {
-      const users = new Users();
+      const users = found;
       Object.assign(users, updateUsersDto);
       if (password) {
         const hashed = await this.hashPassword(password);
         users.password = hashed;
       }
-      const result = await this.usersRepository.update(
-        updateUsersDto.id,
-        users,
-      );
+      const createdData = new this.usersRepository(users);
+      const result = await createdData.save();
       this.logsService.create({
         user_id: req.user.id,
         activity: quota_limit
@@ -152,7 +147,7 @@ export class UsersService {
         content: JSON.stringify(updateUsersDto),
         module: 'users',
       });
-      return new BaseResponse<UpdateResult>(
+      return new BaseResponse<Users>(
         HttpStatus.CREATED,
         'UPDATED',
         `User with ID: ${id} successfully updated`,
@@ -182,8 +177,8 @@ export class UsersService {
     return await bcrypt.hash(password, salt);
   }
 
-  async delete(usersDto: UsersDto, req): Promise<BaseResponse<DeleteResult>> {
-    const users = await this.usersRepository.findOne(usersDto.id);
+  async delete(usersDto: UsersDto, req): Promise<BaseResponse<Users>> {
+    const users = await this.usersRepository.findOne({ _id: usersDto.id });
     if (!users) {
       this.logsService.create({
         user_id: req.user.id,
@@ -191,7 +186,7 @@ export class UsersService {
         content: 'Users not found',
         module: 'users',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Users>(
         HttpStatus.NOT_FOUND,
         'NOT FOUND',
         'Users not found',
@@ -200,7 +195,7 @@ export class UsersService {
     }
 
     try {
-      const result = await this.usersRepository.delete(usersDto.id);
+      const result = await users.remove();
       const { created_at, ...rest } = users;
       this.logsService.create({
         user_id: req.user.id,
@@ -208,7 +203,7 @@ export class UsersService {
         content: JSON.stringify(rest),
         module: 'users',
       });
-      return new BaseResponse<DeleteResult>(
+      return new BaseResponse<Users>(
         HttpStatus.CREATED,
         'DELETED',
         'Users has been deleted',
@@ -230,7 +225,7 @@ export class UsersService {
   async filter(filterDto: FilterDto): Promise<BaseResponse<Users[]>> {
     const { page, size, orderBy, filter } = filterDto;
     try {
-      const [users, total] = await this.usersRepository.findAndCount({
+      const users = await this.usersRepository.find({
         take: size,
         skip: (page - 1) * size,
         order: {
@@ -241,7 +236,7 @@ export class UsersService {
       const pagination = new PaginationBuilder()
         .page(page)
         .size(size)
-        .totalContent(total)
+        .totalContent(users.length)
         .build();
 
       return new BaseResponse<Users[]>(

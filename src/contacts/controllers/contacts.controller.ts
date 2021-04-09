@@ -1,4 +1,12 @@
-import { Body, Controller, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
@@ -19,9 +27,7 @@ export class ContactsController {
   constructor(private contactsService: ContactsService) {}
 
   @Post()
-  public async create(
-    @Res() res, @Body() createContactDto: ContactsCreateDto,
-  ){
+  public async create(@Res() res, @Body() createContactDto: ContactsCreateDto) {
     try {
       const create = await this.contactsService.create(createContactDto);
       return res.status(HttpStatus.OK).json({
@@ -31,7 +37,7 @@ export class ContactsController {
     } catch (error) {
       return res.status(HttpStatus.BAD_REQUEST).json({
         message: 'Error',
-        status: 400
+        status: 400,
       });
     }
   }

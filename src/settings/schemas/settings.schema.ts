@@ -1,30 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import * as mongoose from 'mongoose';
 import { BaseCustomSchema } from 'src/utils/base/schema/base-custom.schema';
-// import { Entity, Column, PrimaryGeneratedColumn, BaseEntity } from 'typeorm';
 
-// @Entity()
-// export class Settings extends BaseEntity {
-//   @PrimaryGeneratedColumn()
-//   id: number;
-
-//   @Column({ type: 'varchar', length: 255 })
-//   key: string;
-
-//   @Column({ type: 'varchar', length: 255 })
-//   value: string;
-// }
-
-
-export type SettingsDocument = Settings & Document;
+export type SettingsDocument = Settings & mongoose.Document;
 
 @Schema()
 export class Settings extends BaseCustomSchema {
-  @Prop([String])
+  @Prop({ type: String })
   key: string;
 
-  @Prop([String])
+  @Prop({ type: String })
   value: string;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);
-

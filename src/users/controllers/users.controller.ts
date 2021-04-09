@@ -5,11 +5,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
-import { DeleteResult, UpdateResult } from 'typeorm';
 import { UsersCreateDto } from '../dtos/users.create.dto';
 import { UsersDto } from '../dtos/users.dto';
 import { UsersUpdateDto } from '../dtos/users.update.dto';
-import { Users } from '../entities/users.entity';
+import { Users } from '../schemas/users.schema';
 import { UsersService } from '../services/users.service';
 
 @ApiTags('Users')
@@ -43,7 +42,7 @@ export class UsersController {
   async update(
     @Body() usersUpdateDto: UsersUpdateDto,
     @Req() req,
-  ): Promise<BaseResponse<UpdateResult>> {
+  ): Promise<BaseResponse<Users>> {
     return await this.usersService.update(usersUpdateDto, req);
   }
 
@@ -51,7 +50,7 @@ export class UsersController {
   async delete(
     @Body() usersDto: UsersDto,
     @Req() req,
-  ): Promise<BaseResponse<DeleteResult>> {
+  ): Promise<BaseResponse<Users>> {
     return this.usersService.delete(usersDto, req);
   }
 

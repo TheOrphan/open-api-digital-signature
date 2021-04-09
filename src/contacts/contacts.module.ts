@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import * as config from 'config';
 
@@ -24,10 +23,10 @@ const jwt = config.get('jwt');
     }),
     // TypeOrmModule.forFeature([ContactsRepository]),
     MongooseModule.forFeature([
-      {name: Contacts.name,schema: ContactsSchema},
+      { name: Contacts.name, schema: ContactsSchema },
     ]),
   ],
   controllers: [ContactsController],
-  providers: [ContactsService],
+  providers: [ContactsService, ContactsRepository],
 })
 export class ContactsModule {}

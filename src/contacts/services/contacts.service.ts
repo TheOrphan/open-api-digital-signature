@@ -25,7 +25,7 @@ export class ContactsService {
     @InjectModel(Contacts.name) private contactsModel: Model<ContactsDocument>,
   ) {}
 
-  async create(createDto: ContactsCreateDto): Promise<Contacts>{
+  async create(createDto: ContactsCreateDto): Promise<Contacts> {
     const create = new this.contactsModel(createDto);
     return create.save();
   }

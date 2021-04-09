@@ -1,5 +1,15 @@
-import { EntityRepository, Repository } from 'typeorm';
-import { Groups } from '../entities/groups.entity';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Groups, GroupsDocument } from '../schemas/groups.schema';
 
-@EntityRepository(Groups)
-export class GroupsRepository extends Repository<Groups> {}
+@Injectable()
+export class GroupsRepository {
+  constructor(
+    @InjectModel(Groups.name) private groupsModel: Model<GroupsDocument>,
+  ) {}
+
+  async findAll(): Promise<Groups[]> {
+    return this.groupsModel.find().exec();
+  }
+}

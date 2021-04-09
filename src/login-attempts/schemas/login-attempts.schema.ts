@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { BaseCustomSchema } from 'src/utils/base/schema/base-custom.schema';
+import * as mongoose from 'mongoose';
 
 // @Entity()
 // export class LoginAttempts extends BaseEntity {
@@ -16,18 +17,18 @@ import { BaseCustomSchema } from 'src/utils/base/schema/base-custom.schema';
 //   time: number;
 // }
 
-export type LoginAttemptsDocument = LoginAttempts & Document;
+export type LoginAttemptsDocument = LoginAttempts & mongoose.Document;
 
 @Schema()
-export class LoginAttempts extends BaseCustomSchema{
-    @Prop([String])
-    ip_address: string;
+export class LoginAttempts extends BaseCustomSchema {
+  @Prop({ type: String })
+  ip_address: string;
 
-    @Prop([String])
-    login: string;
+  @Prop({ type: String })
+  login: string;
 
-    @Prop([String])
-    time: string;
+  @Prop({ type: String })
+  time: string;
 }
 
 export const LoginAttemptsSchema = SchemaFactory.createForClass(LoginAttempts);

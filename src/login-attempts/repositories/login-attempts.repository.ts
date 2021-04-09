@@ -1,6 +1,19 @@
-import { EntityRepository, Repository } from 'typeorm';
-import { LoginAttempts } from '../schemas/login-attempts.schema';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import {
+  LoginAttempts,
+  LoginAttemptsDocument,
+} from '../schemas/login-attempts.schema';
 
+@Injectable()
+export class LoginAttemptsRepository {
+  constructor(
+    @InjectModel(LoginAttempts.name)
+    private loginAttemptsModel: Model<LoginAttemptsDocument>,
+  ) {}
 
-@EntityRepository(LoginAttempts)
-export class LoginAttemptsRepository extends Repository<LoginAttempts> {}
+  async findAll(): Promise<LoginAttempts[]> {
+    return this.loginAttemptsModel.find().exec();
+  }
+}
