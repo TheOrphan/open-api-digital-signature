@@ -47,7 +47,7 @@ export class KYCTTDService {
             '/gateway/digitalSignatureFullJwtSandbox/1.0/sendSpeciment/v1',
           {
             param: {
-              email: req.user.email,
+              email: 'valar.js7l@gmail.com',
               systemId: kycConfig.SYSTEM_ID,
               speciment,
             },
