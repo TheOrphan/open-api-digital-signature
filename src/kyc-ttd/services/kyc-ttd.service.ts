@@ -73,7 +73,7 @@ export class KYCTTDService {
         HttpStatus.ACCEPTED,
         'SUCCESS',
         'Settings found',
-        {},
+        sendingSpeciment.data,
       );
     } catch (error) {
       this.logsService.create({
@@ -139,4 +139,56 @@ export class KYCTTDService {
       );
     }
   }
+
+  //   async sendTTDLink(req): Promise<BaseResponse<any>> {
+  //     try {
+  //       const peruriToken = await this.settingsRepository.findOne({
+  //         key: 'peruri_token',
+  //       });
+  //       const kycConfig = config.get('kyc');
+  //       const checkCertificate = await this.httpService
+  //         .post(
+  //           kycConfig.URL +
+  //             '/gateway/digitalSignatureFullJwtSandbox/1.0/checkCertificate/v1',
+  //           {
+  //             param: {
+  //               email: req.user.email,
+  //               systemId: kycConfig.SYSTEM_ID,
+  //             },
+  //           },
+  //           {
+  //             headers: {
+  //               'Content-Type': 'application/json',
+  //               'x-Gateway-APIKey': kycConfig.API_KEY,
+  //               Authorization: 'Bearer ' + peruriToken.value,
+  //             },
+  //           },
+  //         )
+  //         .toPromise();
+  //       if (checkCertificate) {
+  //         this.logsService.create({
+  //           user_id: req.user.id,
+  //           activity: 'success',
+  //           content: req.ip,
+  //           module: 'login',
+  //         });
+  //       }
+  //       return new BaseResponse<any>(
+  //         HttpStatus.ACCEPTED,
+  //         'SUCCESS',
+  //         'Settings found',
+  //         {},
+  //       );
+  //     } catch (error) {
+  //       this.logsService.create({
+  //         user_id: req.user.id,
+  //         activity: 'failed',
+  //         content: error.message + ' with ip : ' + req.ip,
+  //         module: 'login',
+  //       });
+  //       throw new BadRequestException(
+  //         `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
+  //       );
+  //     }
+  //   }
 }

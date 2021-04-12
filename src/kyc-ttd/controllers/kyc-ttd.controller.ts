@@ -26,4 +26,9 @@ export class KYCTTDController {
   async checkCertificate(@Req() req): Promise<BaseResponse<KYCTTD>> {
     return this.kycttdService.checkCertificate(req);
   }
+
+  //   @Post('send-kyc-ttd-link')
+  //   async sendTTDLink(@Req() req): Promise<BaseResponse<KYCTTD>> {
+  //     return this.kycttdService.sendTTDLink(kycSpecimentDto, req);
+  //   }
 }
