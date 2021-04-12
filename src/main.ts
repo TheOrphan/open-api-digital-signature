@@ -20,6 +20,7 @@ import { LoginAttemptsModule as LoginAttempts } from './login-attempts/login-att
 import { LogsModule as Logs } from './logs/logs.module';
 import { UsersGroupsModule as UsersGroups } from './users-groups/users-groups.module';
 import { SettingsModule as Settings } from './settings/settings.module';
+import { VideosModule as Videos } from './videos/videos.module';
 
 const server = config.get('server');
 
@@ -38,6 +39,7 @@ async function bootstrap() {
   swagger('api/settings', app, 'Settings', Settings);
   swagger('api/users', app, 'Users', Users);
   swagger('api/users-groups', app, 'Users groups', UsersGroups);
+  swagger('api/videos-verification', app, 'Videos Verification', Videos);
   // ========== swagger ===========
 
   useContainer(app.select(AppModule), { fallbackOnErrors: true });

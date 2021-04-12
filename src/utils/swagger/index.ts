@@ -3,8 +3,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 const options = (moduleName: string) =>
   new DocumentBuilder()
     .addBearerAuth()
-    .setTitle(`eMaterai - ${moduleName}`)
-    .setDescription('API description for eMaterai')
+    .setTitle(`SF Digital Signature - ${moduleName}`)
+    .setDescription('API description for Digital Signature')
     .setVersion('0.1')
     .addTag(moduleName)
     .build();

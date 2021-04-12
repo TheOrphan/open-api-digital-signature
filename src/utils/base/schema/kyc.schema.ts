@@ -30,8 +30,14 @@ export class KYC {
   @Prop({ type: Number })
   otp_code: number;
 
+  @Prop({ type: String })
+  videoStream: string;
+
   @Prop({ type: Boolean, default: false })
   otp_status: boolean;
+
+  @Prop({ type: String })
+  api_key: string;
 
   @Prop({
     type: String,
