@@ -17,6 +17,7 @@ import { LogsModule } from './logs/logs.module';
 import { UsersGroupsModule } from './users-groups/users-groups.module';
 import { SettingsModule } from './settings/settings.module';
 import { AppController } from './app.controller';
+import { KYCTTDModule } from './kyc-ttd/kyc-ttd.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AppController } from './app.controller';
     UsersGroupsModule,
     SettingsModule,
     VideosModule,
+    KYCTTDModule,
   ],
   controllers: [AppController],
 })

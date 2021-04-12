@@ -4,10 +4,10 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { BaseResponse } from 'src/utils/base/response/base.response';
 import { KYC as KYCTTD } from 'src/utils/base/schema/kyc.schema';
-import { KycSpecimentDto } from '../dtos/kyc-ttd.create.dto';
+import { KycSpecimentDto } from '../dtos/kyc-ttd.speciment.dto';
 import { KYCTTDService } from '../services/kyc-ttd.service';
 
-@ApiTags('KYCTTD')
+@ApiTags('KYC TTD')
 @ApiBearerAuth()
 @UseGuards(AuthGuard())
 @Controller('kyc-ttd')
@@ -15,10 +15,20 @@ export class KYCTTDController {
   constructor(private kycttdService: KYCTTDService) {}
 
   @Post('send-speciment')
-  async getAll(
+  async sendSpeciment(
     @Body() kycSpecimentDto: KycSpecimentDto,
     @Req() req,
-  ): Promise<BaseResponse<KYCTTD[]>> {
+  ): Promise<BaseResponse<KYCTTD>> {
     return this.kycttdService.sendSpeciment(kycSpecimentDto, req);
   }
+
+  @Post('check-certificate')
+  async checkCertificate(@Req() req): Promise<BaseResponse<KYCTTD>> {
+    return this.kycttdService.checkCertificate(req);
+  }
+
+  //   @Post('send-kyc-ttd-link')
+  //   async sendTTDLink(@Req() req): Promise<BaseResponse<KYCTTD>> {
+  //     return this.kycttdService.sendTTDLink(kycSpecimentDto, req);
+  //   }
 }
