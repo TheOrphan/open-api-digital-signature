@@ -33,6 +33,7 @@
     "@types/node": "^12.7.5",
     "aws-sdk": "^2.824.0",
     "bcryptjs": "^2.4.3",
+    "body-parser": "^1.19.0",
     "class-transformer": "0.2.3",
     "class-validator": "^0.9.1",
     "config": "^3.2.5",

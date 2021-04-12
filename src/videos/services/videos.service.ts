@@ -39,56 +39,57 @@ export class VideosService {
   // async videoVerify(createvideosDto: VideosDto,req):
 
   async create(createvideosDto: VideosDto, req): Promise<any> {
-    const found = await this.kycsRepository.findOne();
-    if (found) {
-      throw new BadRequestException('Record already exist');
-    }
+    // const found = await this.kycsRepository.findOne();
+    // if (found) {
+    //   throw new BadRequestException('Record already exist');
+    // }
     try {
       const setting = await this.settingRepository.findOne({
         key: 'peruri_token',
       });
       const { videoStream } = createvideosDto;
       const KycConfig = config.get('kyc');
-      const user = await this.kycsRepository.findOne({user_id: req.user.id});
-        const videoperuri = await this.httpService
-          .post(
-            KycConfig.URL +
-              '/gateway/digitalSignatureFullJwtSandbox/1.0/videoVerification/v1',
-            {
-              param: {
-                systemId: KycConfig.SYSTEM_ID,
-                email: req.user.email,
-                videoStream,
+      const user = await this.kycsRepository.findOne({ user_id: req.user.id });
+      const videoperuri = await this.httpService
+        .post(
+          KycConfig.URL +
+            '/gateway/digitalSignatureFullJwtSandbox/1.0/videoVerification/v1',
+          {
+            param: {
+              systemId: KycConfig.SYSTEM_ID,
+              email: req.user.email,
+              videoStream,
+            },
+          },
+          {
+            headers: {
+              post: {
+                'Content-Type': 'application/json',
+                'x-Gateway-APIKey': KycConfig.API_KEY,
+                Authorization: 'Bearer ' + setting.value,
               },
             },
-            {
-              headers: {
-                post: {
-                  'Content-Type': 'application/json',
-                  'x-Gateway-APIKey': KycConfig.API_KEY,
-                  Authorization: 'Bearer ' + setting.value,
-                },
-              },
-            },
-          )
-          .toPromise();
-        const kycs = new KYC();
-        Object.assign(kycs, createvideosDto);
-        kycs.user_id = req.user.id;
-        kycs.created_at = dayjs().format();
-        const createData = new this.kycsRepository(kycs);
-        const result = await createData.save();
-        this.logsService.create({
-          user_id: req.user.id,
-          activity: 'create success',
-          content: JSON.stringify(createvideosDto),
-          module: 'contacts',
-        });
-        return new BaseResponse<KYC>(
-          HttpStatus.CREATED,
-          'CREATED',
-          'Video successfully created',
-        );
+          },
+        )
+        .toPromise();
+      const kycs = new KYC();
+      Object.assign(kycs, createvideosDto);
+      kycs.user_id = req.user.id;
+      kycs.created_at = dayjs().format();
+      const createData = new this.kycsRepository(kycs);
+      const result = await createData.save();
+      this.logsService.create({
+        user_id: req.user.id,
+        activity: 'create success',
+        content: JSON.stringify(createvideosDto),
+        module: 'contacts',
+      });
+      return new BaseResponse<any>(
+        HttpStatus.CREATED,
+        'CREATED',
+        'Video successfully created',
+        videoperuri.data,
+      );
     } catch (error) {
       this.logsService.create({
         user_id: req.user.id,

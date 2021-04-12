@@ -26,19 +26,8 @@ import { ContactsService } from '../services/contacts.service';
 export class ContactsController {
   constructor(private contactsService: ContactsService) {}
 
-  @Post('get-all')
-  async getAll(
-    @Body() getAllDataDto: GetAllDataDto,
-  ): Promise<BaseResponse<Contacts[]>> {
-    return this.contactsService.getAllData(getAllDataDto);
-  }
 
-  @Post('get-by-id')
-  async getById(
-    @Body() contactsDto: ContactsDto,
-  ): Promise<BaseResponse<Contacts>> {
-    return this.contactsService.getById(contactsDto);
-  }
+
 
   @Post('create')
   async create(
@@ -48,26 +37,4 @@ export class ContactsController {
     return this.contactsService.create(ContactsCreateDto, req);
   }
 
-  @Post('update')
-  async update(
-    @Body() ContactsUpdateDto: ContactsUpdateDto,
-    @Req() req,
-  ): Promise<BaseResponse<Contacts>> {
-    return await this.contactsService.update(ContactsUpdateDto, req);
-  }
-
-  @Post('delete')
-  async delete(
-    @Body() contactsDto: ContactsDto,
-    @Req() req,
-  ): Promise<BaseResponse<Contacts>> {
-    return this.contactsService.delete(contactsDto, req);
-  }
-
-  @Post('get-filter')
-  async filter(
-    @Body() filterDto: FilterDto,
-  ): Promise<BaseResponse<Contacts[]>> {
-    return this.contactsService.filter(filterDto);
-  }
 }

@@ -22,6 +22,7 @@ import { UsersGroupsModule as UsersGroups } from './users-groups/users-groups.mo
 import { SettingsModule as Settings } from './settings/settings.module';
 import { VideosModule as Videos } from './videos/videos.module';
 import { KYCTTDModule } from './kyc-ttd/kyc-ttd.module';
+import * as bodyParser from 'body-parser';
 
 const server = config.get('server');
 
@@ -52,6 +53,8 @@ async function bootstrap() {
    * So disable cors yang di htaccess
    */
   app.enableCors();
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
   await app.listen(server.port);
   logger.log(`Application listening on port ${server.port}`);
