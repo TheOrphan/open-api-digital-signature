@@ -1,11 +1,10 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
-import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
-import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { BaseResponse } from 'src/utils/base/response/base.response';
 import { KYC as KYCTTD } from 'src/utils/base/schema/kyc.schema';
+import { KycSpecimentDto } from '../dtos/kyc-ttd.create.dto';
 import { KYCTTDService } from '../services/kyc-ttd.service';
 
 @ApiTags('KYCTTD')
@@ -15,10 +14,11 @@ import { KYCTTDService } from '../services/kyc-ttd.service';
 export class KYCTTDController {
   constructor(private kycttdService: KYCTTDService) {}
 
-  @Post('get-all')
+  @Post('send-speciment')
   async getAll(
-    @Body() getAllDataDto: GetAllDataDto,
+    @Body() kycSpecimentDto: KycSpecimentDto,
+    @Req() req,
   ): Promise<BaseResponse<KYCTTD[]>> {
-    return this.kycttdService.getAllData(getAllDataDto);
+    return this.kycttdService.sendSpeciment(kycSpecimentDto, req);
   }
 }

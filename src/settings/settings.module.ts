@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { HttpModule, Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import * as config from 'config';
@@ -14,6 +14,7 @@ const jwt = config.get('jwt');
 @Module({
   imports: [
     LogsModule,
+    HttpModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: jwt.secret,
@@ -27,5 +28,6 @@ const jwt = config.get('jwt');
   ],
   controllers: [SettingsController],
   providers: [SettingsService],
+  exports: [SettingsService],
 })
 export class SettingsModule {}

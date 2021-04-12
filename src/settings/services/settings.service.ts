@@ -3,7 +3,11 @@ import {
   HttpStatus,
   Injectable,
   NotFoundException,
+  HttpService,
 } from '@nestjs/common';
+import * as dayjs from 'dayjs';
+import * as config from 'config';
+
 import { GetAllDataDto } from 'src/utils/base/dto/base-query.dto';
 import { FilterDto } from 'src/utils/base/dto/filter.dto';
 import { PaginationBuilder } from 'src/utils/base/pagination/pagination.builder';
@@ -14,16 +18,89 @@ import { SettingsUpdateDto } from '../dtos/settings.update.dto';
 import { LogsService } from 'src/logs/services/logs.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as dayjs from 'dayjs';
 import { Settings, SettingsDocument } from '../schemas/settings.schema';
-import { settings } from 'cluster';
+
 @Injectable()
 export class SettingsService {
   constructor(
     @InjectModel(Settings.name)
     private settingsRepository: Model<SettingsDocument>,
+    private httpService: HttpService,
     private logsService: LogsService,
   ) {}
+
+  async generatePeruriToken(requester) {
+    try {
+      const peruriToken = await this.settingsRepository.findOne({
+        key: 'peruri_token',
+      });
+      const peruriTokenExp = await this.settingsRepository.findOne({
+        key: 'peruri_token_exp',
+      });
+      if (peruriToken && peruriToken.value !== '') {
+        if (peruriTokenExp && peruriTokenExp.value !== '') {
+          if (dayjs().isBefore(dayjs(peruriTokenExp.value))) {
+            return peruriToken.value;
+          }
+        }
+      }
+
+      const kycConfig = config.get('kyc');
+      const kycJWT = await this.httpService
+        .post(
+          kycConfig.URL + '/gateway/jwtSandbox/1.0/getJsonWebToken/v1',
+          { param: { systemId: kycConfig.SYSTEM_ID } },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'x-Gateway-APIKey': kycConfig.API_KEY,
+            },
+          },
+        )
+        .toPromise();
+
+      const setting1 = new Settings();
+      setting1['_id'] = peruriToken?._id;
+      setting1.key = 'peruri_token';
+      setting1.value = kycJWT.data.data.jwt;
+      setting1.created_at = dayjs().format();
+      const setting1Data = new this.settingsRepository(setting1);
+      const isSetting1Data = await setting1Data.save();
+      this.logsService.create({
+        user_id: requester,
+        activity: 'PERURI JWT generated',
+        content: JSON.stringify(setting1),
+        module: 'PERURI AUTH',
+      });
+
+      const setting2 = new Settings();
+      setting2['_id'] = peruriTokenExp?._id;
+      setting2.key = 'peruri_token_exp';
+      setting2.value = kycJWT.data.data.expiredDate;
+      setting2.created_at = dayjs().format();
+      const setting2Data = new this.settingsRepository(setting2);
+      const isSetting2Data = await setting2Data.save();
+      this.logsService.create({
+        user_id: requester,
+        activity: 'PERURI JWT generated',
+        content: JSON.stringify(setting2),
+        module: 'PERURI AUTH',
+      });
+      if (isSetting1Data && isSetting2Data) {
+        return true;
+      }
+    } catch (error) {
+      this.logsService.create({
+        user_id: requester,
+        activity: 'failed',
+        content: error.message,
+        module: 'PERURI AUTH',
+      });
+      throw new BadRequestException(
+        `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
+      );
+    }
+  }
 
   async getAllData(
     getAllDataDto: GetAllDataDto,

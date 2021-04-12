@@ -1,6 +1,3 @@
-export class LogsCreateDto {
-  user_id: number;
-  activity: string;
-  content: string;
-  module: string;
+export class KycSpecimentDto {
+  speciment: string;
 }

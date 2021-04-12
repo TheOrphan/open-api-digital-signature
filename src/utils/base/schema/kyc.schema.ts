@@ -15,11 +15,11 @@ export class KYC {
   @Prop({ type: String })
   link_ttd: string;
 
-  @Prop({ type: String })
-  ds_user: string;
+  // @Prop({ type: String })
+  // ds_user: string;
 
-  @Prop({ type: String })
-  ds_pass: string;
+  // @Prop({ type: String })
+  // ds_pass: string;
 
   @Prop({ type: Boolean, default: false })
   video_status: boolean;

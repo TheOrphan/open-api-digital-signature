@@ -9,13 +9,13 @@ export class Users {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Contacts' })
   contact_id: Contacts;
 
-  @Prop({ type: String, required: true })
-  login_token: string;
+  // @Prop({ type: String })
+  // peruri_token: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   ip_address: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   username: string;
 
   @Prop({ type: String })
@@ -24,13 +24,13 @@ export class Users {
   @Prop({ type: String, unique: true })
   email: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   activation_code: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   forgotten_password_code: string;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: String })
   forgotten_password_time: string;
 
   @Prop({ type: Number })
