@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  HttpService,
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -15,83 +16,99 @@ import { LogsService } from 'src/logs/services/logs.service';
 import { Contacts, ContactsDocument } from '../schemas/contacts.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as config from 'config';
 import dayjs = require('dayjs');
+import {
+  Settings,
+  SettingsDocument,
+} from 'src/settings/schemas/settings.schema';
 
 @Injectable()
 export class ContactsService {
   constructor(
     @InjectModel(Contacts.name)
     private contactsRepository: Model<ContactsDocument>,
+    @InjectModel(Settings.name)
+    private settingRepository: Model<SettingsDocument>,
     private logsService: LogsService,
+    private httpService: HttpService,
   ) {}
 
-  // async create(createDto: ContactsCreateDto): Promise<Contacts> {
-  //   const create = new this.contactsModel(createDto);
-  //   return create.save();
-  // }
-
-  async getAllData(
-    getAllDataDto: GetAllDataDto,
-  ): Promise<BaseResponse<Contacts[]>> {
-    const { size, where, page, orderBy } = getAllDataDto;
-
-    try {
-      // const contacts = await this.contactsRepository.find({
-      //   where,
-      //   take: size,
-      //   skip: (page - 1) * size,
-      //   // order: orderBy
-      // });
-
-      const contacts = await this.contactsRepository
-        .find()
-        .limit(size)
-        .skip(page - 1 * size);
-
-      const pagination = new PaginationBuilder()
-        .page(page)
-        .size(size)
-        .totalContent(contacts.length)
-        .build();
-
-      return new BaseResponse<Contacts[]>(
-        HttpStatus.OK,
-        'OK',
-        null,
-        contacts,
-        pagination,
-      );
-    } catch (error) {
-      throw new BadRequestException(
-        `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
-      );
-    }
-  }
-
-  async getById(contactsDto: ContactsDto): Promise<BaseResponse<Contacts>> {
-    const contacts = await this.contactsRepository.findOne({
-      _id: contactsDto.id,
-    });
-    if (!contacts) {
-      throw new NotFoundException('Contact not found');
-    }
-    return new BaseResponse<Contacts>(
-      HttpStatus.OK,
-      'OK',
-      'Contact found',
-      contacts,
-    );
-  }
-
   async create(createContactsDto: ContactsCreateDto, req): Promise<any> {
-    const found = await this.contactsRepository.findOne({
-      first_name: createContactsDto.first_name,
-      last_name: createContactsDto.last_name,
-    });
-    if (found) {
-      throw new BadRequestException('Record already exist');
-    }
+    // const found = await this.contactsRepository.findOne({
+    //   first_name: createContactsDto.first_name,
+    //   last_name: createContactsDto.last_name,
+    // });
+    // if (found) {
+    //   throw new BadRequestException('Record already exist');
+    // }
     try {
+      const {
+        first_name,
+        last_name,
+        phone,
+        email,
+        password,
+        peruri_type,
+        ktp,
+        ktpPhoto,
+        npwp,
+        npwpPhoto,
+        selfPhoto,
+        address,
+        city,
+        province,
+        gender,
+        placeofBirth,
+        dateofBirth,
+        orgUnit,
+        workUnit,
+        position,
+      } = createContactsDto;
+      const setting = await this.settingRepository.findOne({
+        key: 'peruri_token',
+      });
+      const KycConfig = config.get('kyc');
+      const register = await this.httpService
+        .post(
+          KycConfig.URL +
+            '/gateway/digitalSignatureFullJwtSandbox/1.0/registration/v1',
+          {
+            param: {
+              systemId: KycConfig.SYSTEM_ID,
+              name: first_name + ' ' + last_name,
+              phone,
+              email,
+              password,
+              type: peruri_type,
+              ktp,
+              ktpPhoto,
+              npwp,
+              npwpPhoto,
+              selfPhoto,
+              address,
+              city,
+              province,
+              gender,
+              placeofBirth,
+              dateofBirth,
+              orgUnit,
+              workUnit,
+              position,
+            },
+          },
+          {
+            headers: {
+              post: {
+                'Content-Type': 'application/json',
+                'x-Gateway-APIKey': KycConfig.API_KEY,
+                Authorization: 'Bearer ' + setting.value,
+              },
+            },
+          },
+        )
+        .toPromise();
+      console.log(register.data);
       const contacts = new Contacts();
       Object.assign(contacts, createContactsDto);
       contacts.created_at = dayjs().format();
@@ -100,14 +117,14 @@ export class ContactsService {
       this.logsService.create({
         user_id: req.user.id,
         activity: 'create success',
-        content: JSON.stringify(createContactsDto),
+        content: JSON.stringify(result),
         module: 'contacts',
       });
-      return new BaseResponse<Contacts>(
+      return new BaseResponse<any>(
         HttpStatus.CREATED,
         'CREATED',
         'Contact successfully created',
-        result,
+        register.data,
       );
     } catch (error) {
       this.logsService.create({
@@ -116,132 +133,6 @@ export class ContactsService {
         content: error.message,
         module: 'contacts',
       });
-      throw new BadRequestException(
-        `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
-      );
-    }
-  }
-
-  async update(
-    updateContactsDto: ContactsUpdateDto,
-    req,
-  ): Promise<BaseResponse<Contacts>> {
-    const { id } = updateContactsDto;
-    const found = await this.contactsRepository.findOne({ _id: id });
-    if (!found) {
-      return new BaseResponse<Contacts>(
-        HttpStatus.NOT_FOUND,
-        'ERROR',
-        `Contact with ID: ${id} not found`,
-        null,
-      );
-    }
-
-    try {
-      const contacts = found;
-      Object.assign(contacts, updateContactsDto);
-      // const result = await this.contactsRepository.update(
-      //   updateContactsDto.id,
-      //   contacts,
-      // );
-      contacts.updated_at = dayjs().format();
-      const createData = new this.contactsRepository(contacts);
-      const result = await createData.save();
-      this.logsService.create({
-        user_id: req.user.id,
-        activity: 'update success',
-        content: JSON.stringify(updateContactsDto),
-        module: 'contacts',
-      });
-      return new BaseResponse<Contacts>(
-        HttpStatus.CREATED,
-        'UPDATED',
-        'Contact successfully updated',
-        result,
-      );
-    } catch (error) {
-      this.logsService.create({
-        user_id: req.user.id,
-        activity: 'update failed',
-        content: error.message,
-        module: 'contacts',
-      });
-      throw new BadRequestException(
-        `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
-      );
-    }
-  }
-
-  async delete(contactsDto: ContactsDto, req): Promise<BaseResponse<Contacts>> {
-    const contacts = await this.contactsRepository.findOne({
-      _id: contactsDto.id,
-    });
-    if (!contacts) {
-      this.logsService.create({
-        user_id: req.user.id,
-        activity: 'delete failed',
-        content: 'Contact not found',
-        module: 'contacts',
-      });
-      return new BaseResponse<Contacts>(
-        HttpStatus.NOT_FOUND,
-        'NOT FOUND',
-        'Contact not found',
-        null,
-      );
-    }
-    try {
-      const result = await contacts.remove();
-      const { created_at, updated_at, ...rest } = contacts;
-      this.logsService.create({
-        user_id: req.user.id,
-        activity: 'delete success',
-        content: JSON.stringify(rest),
-        module: 'contacts',
-      });
-      return new BaseResponse<Contacts>(
-        HttpStatus.CREATED,
-        'DELETED',
-        'Contact has been deleted',
-        result,
-      );
-    } catch (error) {
-      this.logsService.create({
-        user_id: req.user.id,
-        activity: 'delete failed',
-        content: error.message,
-        module: 'contacts',
-      });
-      throw new BadRequestException(
-        `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
-      );
-    }
-  }
-
-  async filter(filterDto: FilterDto): Promise<BaseResponse<Contacts[]>> {
-    const { page, size, orderBy, filter } = filterDto;
-    try {
-      const contacts = await this.contactsRepository
-        .find({ filter })
-        .limit(size)
-        .skip((page - 1) * size)
-        .sort({
-          created_at: orderBy === orderBy ? -1 : 1,
-        });
-      const pagination = new PaginationBuilder()
-        .page(page)
-        .size(size)
-        .totalContent(contacts.length)
-        .build();
-
-      return new BaseResponse<Contacts[]>(
-        HttpStatus.OK,
-        'FIND ALL',
-        null,
-        contacts,
-        pagination,
-      );
-    } catch (error) {
       throw new BadRequestException(
         `Anda mengalami error: ${error.message}. Hubungi Admin untuk bantuan`,
       );
